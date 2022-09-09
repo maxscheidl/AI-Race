@@ -19,10 +19,10 @@ road = Road()
 
 cars = []
 
-for i in range(30):
-    cars.append(Car(65, 200, "AI"))
+for i in range(1):
+    cars.append(Car(road.segments[0].spawn[0], road.segments[0].spawn[1], "AI"))
 
-#cars.append(Car(65, 200, "Manual"))
+#cars.append(Car(road.segments[0].spawn[0], road.segments[0].spawn[1], "Manual"))
 
 best = cars[0]
 
@@ -45,7 +45,7 @@ def main():
             if event.type == pygame.QUIT:
                 run = False
             if (event.type == pygame.KEYDOWN) or (event.type == pygame.KEYUP):
-                cars[1].controls.update(event)
+                cars[0].controls.update(event)
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
@@ -60,7 +60,7 @@ def main():
         road.draw(canvas)
 
         for car in cars:
-            car.move(road.left_boarder, road.right_boarder, road.checkpoints)
+            car.move(road.segments)
 
         for car in cars:
             car.draw(canvas, True if car == best else False)
@@ -81,7 +81,6 @@ def main():
 def find_best_car():
 
     global best
-    #best = cars[0]
 
     for car in cars:
         if car.score > best.score:
@@ -96,13 +95,13 @@ def reset():
 
     for i, car in enumerate(cars):
         if i == 0:
-            car.reset(65, 200, best.network.clone())
-        elif i < 20:
-            car.reset(65, 200, best.network.clone().mutate(0.1))
-        elif i < 25:
-            car.reset(65, 200, best.network.clone().mutate(0.2))
+            car.reset(road.segments[0].spawn[0], road.segments[0].spawn[1], best.network.clone())
+        elif i < len(cars)*0.6:
+            car.reset(road.segments[0].spawn[0], road.segments[0].spawn[1], best.network.clone().mutate(0.01))
+        elif i < len(cars)*0.8:
+            car.reset(road.segments[0].spawn[0], road.segments[0].spawn[1], best.network.clone().mutate(0.05))
         else:
-            car.reset(65, 200, best.network.clone().mutate(0.5))
+            car.reset(road.segments[0].spawn[0], road.segments[0].spawn[1], best.network.clone().mutate(0.1))
 
 
 def safe_brain():

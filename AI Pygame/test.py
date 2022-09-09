@@ -1,9 +1,4 @@
-import pickle
+list = [1, 2,3 ,4 ,5]
 
-
-list = ["a", "b", "c"]
-
-for i, elem in enumerate(reversed(list)):
-    print(i)
-    print(elem)
+print(list[0:-1])
 

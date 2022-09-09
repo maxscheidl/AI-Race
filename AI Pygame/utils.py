@@ -1,5 +1,4 @@
 import math
-from point import Point
 
 
 # O(1)
@@ -30,9 +29,9 @@ def get_ray_color(offset):
 # O(1)
 def get_intersection(a, b, c, d):
 
-    tTop = (d.x - c.x) * (a.y - c.y) - (d.y - c.y) * (a.x - c.x)
-    uTop = (c.y - a.y) * (a.x - b.x) - (c.x - a.x) * (a.y - b.y)
-    bottom = (d.y - c.y) * (b.x - a.x) - (d.x - c.x) * (b.y - a.y)
+    tTop = (d[0] - c[0]) * (a[1] - c[1]) - (d[1] - c[1]) * (a[0] - c[0])
+    uTop = (c[1] - a[1]) * (a[0] - b[0]) - (c[0] - a[0]) * (a[1] - b[1])
+    bottom = (d[1] - c[1]) * (b[0] - a[0]) - (d[0] - c[0]) * (b[1] - a[1])
 
     if bottom != 0:
         t = tTop / bottom
@@ -40,8 +39,7 @@ def get_intersection(a, b, c, d):
 
         if (t >= 0) & (t <= 1) & (u >= 0) & (u <= 1):
             return [
-                Point(lerp(a.x, b.x, t),
-                      lerp(a.y, b.y, t)),
+                (lerp(a[0], b[0], t), lerp(a[1], b[1], t)),
                 t
             ]
 
@@ -74,6 +72,5 @@ def polynom_intersection(pol1, pol2):
                 return True
 
     return False
-
 
 

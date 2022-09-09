@@ -1,7 +1,6 @@
 import pygame
 from controls import Controls
 from sensor import Sensor
-from point import Point
 from utils import polynom_intersection
 from network import Network
 import math
@@ -24,7 +23,10 @@ class Car:
         self.crashed = False
         self.positions = []
 
-        self.nextCheckpoint = 0
+        self.currentSector = []
+        self.nextSegment = 1
+
+        self.controlLine = []
         self.score = 0
 
         self.controls = Controls()
@@ -33,20 +35,21 @@ class Car:
         self.manual = False if type == "AI" else True
         self.network = Network([self.sensor.rayCount, 6, 4])
 
-    def draw(self, canvas, sensors):
+    def draw(self, canvas, best):
 
-        if sensors:
+        if best:
             self.sensor.draw(canvas)
+            pygame.draw.polygon(canvas, "red", self.currentSector, 1)
 
-        pygame.draw.polygon(canvas, "lightgray" if self.crashed else "red",
-                            [(self.positions[0].x, self.positions[0].y),(self.positions[1].x, self.positions[1].y),
-                             (self.positions[2].x, self.positions[2].y),(self.positions[3].x, self.positions[3].y)])
+        pygame.draw.polygon(canvas, "lightgray" if self.crashed else "red", self.positions)
+        pygame.draw.line(canvas, "black", self.positions[0], self.positions[1])
+        #pygame.draw.line(canvas, "black", self.controlLine[0], self.controlLine[1])
 
-        pygame.draw.line(canvas, "black", (self.positions[0].x, self.positions[0].y), (self.positions[1].x, self.positions[1].y), 3)
+    def asses_damage(self, segments):
+        if len(self.currentSector) == 0:
+            self.update_sector(segments)
 
-    def asses_damage(self, left_boarder, right_boarder):
-
-        if polynom_intersection(self.positions, left_boarder) or polynom_intersection(self.positions, right_boarder):
+        if polynom_intersection(self.positions, self.currentSector):
             self.crashed = True
 
     # O(1)
@@ -56,24 +59,20 @@ class Car:
         alpha = math.atan2(self.width, self.height)
 
         points.append(
-            Point(self.x - math.sin(self.angle - alpha) * rad,
-                  self.y - math.cos(self.angle - alpha) * rad)
+            (self.x - math.sin(self.angle - alpha) * rad, self.y - math.cos(self.angle - alpha) * rad)
         )
         points.append(
-            Point(self.x - math.sin(self.angle + alpha) * rad,
-                  self.y - math.cos(self.angle + alpha) * rad)
+            (self.x - math.sin(self.angle + alpha) * rad, self.y - math.cos(self.angle + alpha) * rad)
         )
         points.append(
-            Point(self.x - math.sin(math.pi + self.angle - alpha) * rad,
-                  self.y - math.cos(math.pi + self.angle - alpha) * rad)
+            (self.x - math.sin(math.pi + self.angle - alpha) * rad, self.y - math.cos(math.pi + self.angle - alpha) * rad)
         )
         points.append(
-            Point(self.x - math.sin(math.pi + self.angle + alpha) * rad,
-                  self.y - math.cos(math.pi + self.angle + alpha) * rad)
+            (self.x - math.sin(math.pi + self.angle + alpha) * rad, self.y - math.cos(math.pi + self.angle + alpha) * rad)
         )
         return points
 
-    def move(self, left_boarder, right_boarder, checkpoints):
+    def move(self, segments):
 
         if not self.crashed:
 
@@ -111,21 +110,28 @@ class Car:
             self.y -= math.cos(self.angle) * self.speed
 
             self.positions = self.calculate_positions()  # O(1)
-            self.asses_damage(left_boarder, right_boarder)  # Problem
-            self.update_score(checkpoints)
-            self.sensor.update_rays(left_boarder, right_boarder)  # Problem
+            self.asses_damage(segments)  # Problem
+            self.update_score(segments)
+            self.sensor.update_rays(self.currentSector)  # Problem
 
             if not self.manual:
                 outputs = self.network.feed_forward(self.sensor.get_readings())
                 self.controls.set(outputs)
 
-    def update_score(self, checkpoints):
+    def update_score(self, segments):
 
-        intersection = polynom_intersection(self.positions, checkpoints[self.nextCheckpoint].as_list())
+        segment = segments[self.nextSegment]
+
+        vector = (-(self.positions[3][1] - self.positions[2][1]) ,self.positions[3][0] - self.positions[2][0])
+
+        self.controlLine = [(self.x, self.y), (self.x + vector[0], self.y + vector[1])]
+
+        intersection = polynom_intersection(self.controlLine, [segment.left_boarder[0], segment.right_boarder[0]])
 
         if intersection:
             self.score += 5
-            self.nextCheckpoint = (self.nextCheckpoint + 1) % len(checkpoints)
+            self.nextSegment = (self.nextSegment + 1) % len(segments)
+            self.update_sector(segments)
 
     def reset(self, x, y, network):
         self.x = x
@@ -136,11 +142,29 @@ class Car:
         self.crashed = False
         self.positions = []
 
-        self.nextCheckpoint = 0
+        self.currentSector = []
+        self.nextSegment = 1
         self.score = 0
 
         self.network = network
 
     def highlight(self, canvas, color):
         pygame.draw.circle(canvas, color, (self.x, self.y), 5)
+
+    def update_sector(self, segments):
+        sub_sectors = [(self.nextSegment - 2) % len(segments), (self.nextSegment - 1) % len(segments),
+                       self.nextSegment, (self.nextSegment + 1) % len(segments)]
+
+        sector = []
+        sector.extend(segments[sub_sectors[0]].left_boarder)
+        sector.extend(segments[sub_sectors[1]].left_boarder[1:-1])
+        sector.extend(segments[sub_sectors[2]].left_boarder[0:-1])
+        sector.extend(segments[sub_sectors[3]].left_boarder)
+        sector.extend(reversed(segments[sub_sectors[3]].right_boarder))
+        sector.extend(reversed(segments[sub_sectors[2]].right_boarder[0:-1]))
+        sector.extend(reversed(segments[sub_sectors[1]].right_boarder[1:-1]))
+        sector.extend(reversed(segments[sub_sectors[0]].right_boarder))
+
+        self.currentSector = sector
+
 

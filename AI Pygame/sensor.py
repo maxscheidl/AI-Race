@@ -1,7 +1,6 @@
 import pygame
 import math
 import utils
-from point import Point
 from utils import get_intersection, find_min_offset
 
 
@@ -18,35 +17,25 @@ class Sensor:
 
 
     # O(boarder * ray)
-    def update_intersections(self, left_boarder, right_boarder):
+    def update_intersections(self, sector):
 
         self.intersections = []
 
         for ray in self.rays:
             self.intersections.append(
-                self.calc_intersections(ray, left_boarder, right_boarder)
+                self.calc_intersections(ray, sector)
             )
 
     # O(boarder)
-    def calc_intersections(self, ray, left_boarder, right_boarder):
+    def calc_intersections(self, ray, sector):
 
         intersections = []
 
-        for i in range(len(left_boarder) - 1):
+        for i in range(len(sector)):
 
             intersection = get_intersection(
                 ray[0], ray[1],
-                left_boarder[i], left_boarder[i+1]
-            )
-
-            if len(intersection) != 0:
-                intersections.append(intersection)
-
-        for i in range(len(right_boarder) - 1):
-
-            intersection = get_intersection(
-                ray[0], ray[1],
-                right_boarder[i], right_boarder[i+1]
+                sector[i], sector[(i+1) % len(sector)]
             )
 
             if len(intersection) != 0:
@@ -58,7 +47,7 @@ class Sensor:
             return []
 
     # O(n)
-    def update_rays(self, left_boarder, right_boarder):
+    def update_rays(self, sector):
         self.rays = []
 
         for i in range(self.rayCount):
@@ -68,14 +57,12 @@ class Sensor:
             rayLength = self.rayLegth * utils.ray_length_scale(self.rayCount, i)
 
             self.rays.append([
-                Point(self.car.x,
-                      self.car.y),
-                Point(self.car.x - math.sin(rayAngle) * rayLength,
-                      self.car.y - math.cos(rayAngle) * rayLength),
+                (self.car.x, self.car.y),
+                (self.car.x - math.sin(rayAngle) * rayLength, self.car.y - math.cos(rayAngle) * rayLength),
                 rayLength
             ])
 
-        self.update_intersections(left_boarder, right_boarder)
+        self.update_intersections(sector)
 
     # O(n)
     def draw(self, canvas):
@@ -87,7 +74,7 @@ class Sensor:
             if len(intersection) != 0:
 
                 pygame.draw.line(canvas, utils.get_ray_color(intersection[1]),
-                                 (self.car.x, self.car.y), (intersection[0].x, intersection[0].y), 1)
+                                 (self.car.x, self.car.y), (intersection[0][0], intersection[0][1]), 1)
 
     def get_readings(self):
 
