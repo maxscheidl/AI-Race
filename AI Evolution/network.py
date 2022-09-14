@@ -12,6 +12,8 @@ class Network:
         for i in range(len(neuronCounts) - 1):
             self.levels.append(Level(neuronCounts[i], neuronCounts[i+1]))
 
+        self.feed_forward([0]*neuronCounts[0])
+
     def feed_forward(self, inputs):
         outputs = inputs
 

@@ -23,7 +23,13 @@ class Controls:
             self.forward = not self.forward
 
     def set(self, directions):
-        self.forward = directions[0]
-        self.reverse = directions[1]
-        self.left = directions[2]
-        self.right = directions[3]
+        self.forward = True if directions[0] > 0 else False
+        self.reverse = True if directions[1] > 0 else False
+        self.left = True if directions[2] > 0 else False
+        self.right = True if directions[3] > 0 else False
+
+    def reset(self):
+        self.forward = False
+        self.left = False
+        self.right = False
+        self.reverse = False

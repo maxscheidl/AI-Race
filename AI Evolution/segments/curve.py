@@ -24,6 +24,7 @@ class BlockCurve:
         self.boarder = []
 
         self.width = width
+        self.length = width
         self.offset = width/7
 
         self.calculate_boarders(type)

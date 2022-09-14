@@ -2,7 +2,6 @@ import pygame
 from controls import Controls
 from sensor import Sensor
 from utils import polynom_intersection
-from network import Network
 import math
 
 
@@ -25,21 +24,25 @@ class Car:
 
         self.currentSector = []
         self.nextSegment = 1
+        self.relDistanceToNext = 0
 
         self.controlLine = []
+        self.tempScore = 0
         self.score = 0
+        self.time = 0
+        self.lastScored = 0
 
         self.controls = Controls()
         self.sensor = Sensor(self)
 
         self.manual = False if type == "AI" else True
-        self.network = Network([self.sensor.rayCount, 6, 4])
+        #self.network = Network([self.sensor.rayCount, 6, 4])
 
     def draw(self, canvas, best):
 
         if best:
             self.sensor.draw(canvas)
-            pygame.draw.polygon(canvas, "red", self.currentSector, 1)
+            #pygame.draw.polygon(canvas, "red", self.currentSector, 1)
 
         pygame.draw.polygon(canvas, "lightgray" if self.crashed else "red", self.positions)
         pygame.draw.line(canvas, "black", self.positions[0], self.positions[1])
@@ -72,9 +75,14 @@ class Car:
         )
         return points
 
-    def move(self, segments):
+    def move(self, segments, network):
 
         if not self.crashed:
+
+            self.time += 0.1
+
+            if (self.time - self.lastScored > 10):
+                self.crashed = True
 
             if self.controls.forward:
                 self.speed += self.acceleration
@@ -115,7 +123,7 @@ class Car:
             self.sensor.update_rays(self.currentSector)  # Problem
 
             if not self.manual:
-                outputs = self.network.feed_forward(self.sensor.get_readings())
+                outputs = network.activate(self.sensor.get_readings())
                 self.controls.set(outputs)
 
     def update_score(self, segments):
@@ -128,9 +136,14 @@ class Car:
 
         intersection = polynom_intersection(self.controlLine, [segment.left_boarder[0], segment.right_boarder[0]])
 
+        distance_vector = (segment.start[0] - self.x, segment.start[1] - self.y)
+        self.relDistanceToNext = math.sqrt(math.pow(distance_vector[0], 2) + math.pow(distance_vector[1], 2)) / segment.length
+        self.score = self.tempScore + (1-self.relDistanceToNext) * 10
+
         if intersection:
-            self.score += 5
+            self.tempScore += 10
             self.nextSegment = (self.nextSegment + 1) % len(segments)
+            self.lastScored = self.time
             self.update_sector(segments)
 
     def reset(self, x, y, network):
@@ -144,9 +157,17 @@ class Car:
 
         self.currentSector = []
         self.nextSegment = 1
+        self.relDistanceToNext = 0
+
+        self.controlLine = []
+        self.tempScore = 0
         self.score = 0
+        self.time = 0
+        self.lastScored = 0
 
         self.network = network
+
+        self.controls.reset()
 
     def highlight(self, canvas, color):
         pygame.draw.circle(canvas, color, (self.x, self.y), 5)

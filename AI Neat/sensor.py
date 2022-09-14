@@ -67,7 +67,7 @@ class Sensor:
     # O(n)
     def draw(self, canvas):
         #for ray in self.rays:
-        #    pygame.draw.line(canvas, "black", (ray[0].x, ray[0].y), (ray[1].x, ray[1].y))
+        #    pygame.draw.line(canvas, "black", (ray[0][0], ray[0][1] ), (ray[1][0], ray[1][1]))
 
         for intersection in self.intersections:
 
