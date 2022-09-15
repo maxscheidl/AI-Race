@@ -11,7 +11,7 @@ In this application everything is self-implemented.
 The class **Evolution** is used to train the cars iteratively by evolving and mutating the best neuronal networks.
 
 If you start the program an already trained network is used to drive the cars. If you want to start the training from zero 
-you have to comment the self.load_best_brain() function in the constructor of the evolution class.
+you have to comment the self.load_best_network() function in the constructor of the evolution class.
 
 #### Controls
 
